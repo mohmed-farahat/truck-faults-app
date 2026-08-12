@@ -1,4 +1,4 @@
-from google import genai
+import google.generativeai as genai
 import streamlit as st
 
 st.set_page_config(
@@ -9,6 +9,8 @@ st.title("🚛 نظام تشخيص أعطال أسطول الشاحنات")
 api_key = st.sidebar.text_input("Enter Gemini API Key", type="password")
 
 if api_key:
+    genai.configure(api_key=api_key)
+
     st.subheader("🔍 البحث الشامل في الكتالوجات والمخططات")
 
     truck_type = st.selectbox(
@@ -24,7 +26,7 @@ if api_key:
 
     user_query = st.text_area(
         "أدخل كود العطل أو الوصف الفني أو اسم المكون المطلوب:",
-        placeholder="مثال: GS 17، أو عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
+        placeholder="مثال: GS 10، أو عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
     )
 
     if st.button("🔍 بحث وتشخيص من قاعدة بيانات الكتالوجات"):
@@ -48,17 +50,13 @@ if api_key:
                 """
 
                 try:
-                    # إنشاء العميل باستخدام المكتبة الجديدة الرسميّة
-                    client = genai.Client(api_key=api_key)
-                    response = client.models.generate_content(
-                        model="gemini-2.0-flash",
-                        contents=prompt,
-                    )
+                    # الاعتماد المباشر على الموديل المستقر
+                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    response = model.generate_content(prompt)
                     st.markdown(response.text)
-
                 except Exception as err:
                     st.error(
-                        f"حدث خطأ أثناء الاتصال: {err}\nيرجى التأكد من صحة الـ API Key."
+                        f"حدث خطأ أثناء الاتصال: {err}\nيرجى التأكد من صحة الـ API Key وإعادة إدخاله."
                     )
 else:
     st.warning("يرجى إدخال Gemini API Key في القائمة الجانبية للبدء.")
