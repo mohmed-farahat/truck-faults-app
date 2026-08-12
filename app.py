@@ -26,7 +26,7 @@ if api_key:
 
     user_query = st.text_area(
         "أدخل كود العطل أو الوصف الفني أو اسم المكون المطلوب:",
-        placeholder="مثال: GS 17، أو عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
+        placeholder="مثال: GS 24، أو عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
     )
 
     if st.button("🔍 بحث وتشخيص من قاعدة بيانات الكتالوجات"):
@@ -49,27 +49,28 @@ if api_key:
                 4. القيم القياسية (Sensors values/Voltage) وملاحظات السلامة أثناء الصيانة.
                 """
 
-                # تجربة النماذج المتاحة بترتيب الاستقرار
-                models_to_try = [
-                    "gemini-2.5-flash",
-                    "gemini-1.5-flash-8b",
-                    "gemini-1.5-pro",
-                ]
+                try:
+                    # جلب أول نموذج متاح يدعم توليد النصوص تلقائياً من الحساب
+                    working_model = None
+                    for m in genai.list_models():
+                        if (
+                            "generateContent"
+                            in m.supported_generation_methods
+                        ):
+                            if "flash" in m.name or "pro" in m.name:
+                                working_model = m.name
+                                break
 
-                success = False
-                for model_name in models_to_try:
-                    try:
-                        model = genai.GenerativeModel(model_name)
-                        response = model.generate_content(prompt)
-                        st.markdown(response.text)
-                        success = True
-                        break
-                    except Exception:
-                        continue
+                    if not working_model:
+                        working_model = "models/gemini-1.5-flash"
 
-                if not success:
+                    model = genai.GenerativeModel(working_model)
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+
+                except Exception as err:
                     st.error(
-                        "تعذر الاتصال بجميع النماذج. يرجى التأكد من أن مفتاح API فعال وتم إنشاؤه حديثاً من Google AI Studio."
+                        f"حدث خطأ أثناء الاتصال: {err}\nيرجى التأكد من إعادة نسخ الـ API Key بشكل صحيح."
                     )
 else:
     st.warning("يرجى إدخال Gemini API Key في القائمة الجانبية للبدء.")
