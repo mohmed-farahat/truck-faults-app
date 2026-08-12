@@ -1,8 +1,4 @@
-import os
 import google.generativeai as genai
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
 import streamlit as st
 
 st.set_page_config(
@@ -14,16 +10,17 @@ api_key = st.sidebar.text_input("Enter Gemini API Key", type="password")
 
 if api_key:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    # استخدام موديل gemini-1.5-flash لتجنب خطأ NotFound
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     st.subheader("🔍 البحث الشامل في الكتالوجات والمخططات")
 
     truck_type = st.selectbox(
         "اختر نوع الشاحنة / النظام:",
         [
+            "Volvo FM / FH (D13A / D13C)",
             "Mercedes Actros MP3",
             "Mercedes Actros MP4",
-            "Volvo FM / FH",
             "Mercedes Atego",
             "أنظمة هيدروليك وكهرباء عامة",
         ],
@@ -31,7 +28,7 @@ if api_key:
 
     user_query = st.text_area(
         "أدخل كود العطل أو الوصف الفني أو اسم المكون المطلوب:",
-        placeholder="مثال: عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
+        placeholder="مثال: محرك d13a، أو عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
     )
 
     if st.button("🔍 بحث وتشخيص من قاعدة بيانات الكتالوجات"):
@@ -41,9 +38,8 @@ if api_key:
             with st.spinner(
                 "جاري استعلام الكتالوجات وتحليل العطل بواسطة الذكاء الاصطناعي..."
             ):
-                # صياغة الأمر الموجه للنموذج (Prompt) لتشخيص شامل
                 prompt = f"""
-                أنت مهندس صيانة أسطول نقل ثقيل خبير متخصص في شاحنات الميرسيدس والفولفو.
+                أنت مهندس صيانة أسطول نقل ثقيل خبير متخصص في شاحنات الفولفو والمرسيدس والمعدات.
                 
                 النظام / الشاحنة المطلوب فحصها: {truck_type}
                 استفسار المهندس / الفني: {user_query}
