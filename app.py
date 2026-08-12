@@ -9,18 +9,21 @@ st.title("🚛 نظام تشخيص أعطال أسطول الشاحنات")
 api_key = st.sidebar.text_input("Enter Gemini API Key", type="password")
 
 if api_key:
-    genai.configure(api_key=api_key)
-    # استخدام موديل gemini-1.5-flash لتجنب خطأ NotFound
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    try:
+        genai.configure(api_key=api_key)
+        # استخدام المسمى المباشر والمستقر للنموذج
+        model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    except Exception as e:
+        st.error(f"خطأ في الاتصال بالـ API: {e}")
 
     st.subheader("🔍 البحث الشامل في الكتالوجات والمخططات")
 
     truck_type = st.selectbox(
         "اختر نوع الشاحنة / النظام:",
         [
-            "Volvo FM / FH (D13A / D13C)",
             "Mercedes Actros MP3",
             "Mercedes Actros MP4",
+            "Volvo FM / FH (D13A / D13C)",
             "Mercedes Atego",
             "أنظمة هيدروليك وكهرباء عامة",
         ],
@@ -28,7 +31,7 @@ if api_key:
 
     user_query = st.text_area(
         "أدخل كود العطل أو الوصف الفني أو اسم المكون المطلوب:",
-        placeholder="مثال: محرك d13a، أو عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
+        placeholder="مثال: GS 10، أو عطل P0335، أو سبب تأخير التشغيل، أو مخطط دائرة التبريد...",
     )
 
     if st.button("🔍 بحث وتشخيص من قاعدة بيانات الكتالوجات"):
@@ -39,7 +42,7 @@ if api_key:
                 "جاري استعلام الكتالوجات وتحليل العطل بواسطة الذكاء الاصطناعي..."
             ):
                 prompt = f"""
-                أنت مهندس صيانة أسطول نقل ثقيل خبير متخصص في شاحنات الفولفو والمرسيدس والمعدات.
+                أنت مهندس صيانة أسطول نقل ثقيل خبير متخصص في شاحنات المرسيدس والفولفو والمعدات.
                 
                 النظام / الشاحنة المطلوب فحصها: {truck_type}
                 استفسار المهندس / الفني: {user_query}
@@ -51,7 +54,20 @@ if api_key:
                 4. القيم القياسية (Sensors values/Voltage) وملاحظات السلامة أثناء الصيانة.
                 """
 
-                response = model.generate_content(prompt)
-                st.markdown(response.text)
+                try:
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+                except Exception as err:
+                    # محاولة احتياطية مع الموديل الجديد في حال التحديث
+                    try:
+                        fallback_model = genai.GenerativeModel(
+                            "gemini-2.0-flash"
+                        )
+                        response = fallback_model.generate_content(prompt)
+                        st.markdown(response.text)
+                    except Exception as fallback_err:
+                        st.error(
+                            f"تعذر الاتصال بالنموذج، يرجى التأكد من صلاحية الـ API Key: {fallback_err}"
+                        )
 else:
     st.warning("يرجى إدخال Gemini API Key في القائمة الجانبية للبدء.")
